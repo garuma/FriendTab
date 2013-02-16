@@ -1,0 +1,26 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 11.00
+# Visual Studio 2010
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FriendTab", "FriendTab\FriendTab.csproj", "{ADB6F958-66C1-45D2-BB54-54F9506BEFFE}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FooSvg", "FooSvg\FooSvg.csproj", "{42F9995C-EE4A-4ACD-9437-86BBFAFA39A1}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{42F9995C-EE4A-4ACD-9437-86BBFAFA39A1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{42F9995C-EE4A-4ACD-9437-86BBFAFA39A1}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{42F9995C-EE4A-4ACD-9437-86BBFAFA39A1}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{42F9995C-EE4A-4ACD-9437-86BBFAFA39A1}.Release|Any CPU.Build.0 = Release|Any CPU
+		{ADB6F958-66C1-45D2-BB54-54F9506BEFFE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{ADB6F958-66C1-45D2-BB54-54F9506BEFFE}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{ADB6F958-66C1-45D2-BB54-54F9506BEFFE}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{ADB6F958-66C1-45D2-BB54-54F9506BEFFE}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(MonoDevelopProperties) = preSolution
+		StartupItem = FriendTab\FriendTab.csproj
+	EndGlobalSection
+EndGlobal

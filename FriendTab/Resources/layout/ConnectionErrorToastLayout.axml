@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="horizontal"
+    android:layout_width="fill_parent"
+    android:layout_height="fill_parent"
+    android:id="@+id/toast_layout_root">
+    <TextView
+        android:text="Network error, couldn&apos;t save tab"
+        android:textAppearance="?android:attr/textAppearanceSmall"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/textView1"
+        android:layout_gravity="center_vertical" />
+    <Button
+        android:text="RETRY"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/ToastRetryButton"
+        android:layout_weight="1"
+        android:layout_gravity="center"
+        android:layout_marginLeft="4dp"
+        style="@android:style/Holo.SegmentedButton" />
+</LinearLayout>

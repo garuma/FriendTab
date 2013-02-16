@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical"
+    android:layout_width="fill_parent"
+    android:layout_height="fill_parent">
+<!--
+    <TextView
+        android:text="Where are you?"
+        android:textAppearance="?android:attr/textAppearanceMedium"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:id="@+id/textView1"
+        android:gravity="center"
+        android:layout_marginTop="8dp" />-->
+    <EditText
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:id="@+id/LocationEntry"
+        android:layout_marginLeft="8dp"
+        android:layout_marginTop="8dp"
+        android:layout_marginRight="8dp"
+        android:gravity="left"
+        android:hint="Enter your current location"
+        android:singleLine="true"
+        android:layout_marginBottom="16dp"
+        android:inputType="textNoSuggestions" />
+    <LinearLayout
+        android:orientation="horizontal"
+        android:minWidth="25px"
+        android:minHeight="25px"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginLeft="12dp"
+        android:layout_marginBottom="8dp"
+        android:id="@+id/linearLayout1">
+        <TextView
+            android:text="Near you:"
+            android:textAppearance="?android:attr/textAppearanceSmall"
+            android:layout_height="fill_parent"
+            android:layout_width="wrap_content"
+            android:id="@+id/textView2"
+            android:textColor="#ff383838" />
+        <TextView
+            android:text="(none)"
+            android:textAppearance="?android:attr/textAppearanceSmall"
+            android:layout_width="wrap_content"
+            android:layout_height="fill_parent"
+            android:id="@+id/NoneText"
+            android:textStyle="italic"
+            android:textColor="#ff606060"
+            android:layout_marginLeft="4dp"
+            android:visibility="gone" />
+        <ProgressBar
+            style="@android:style/Widget.ProgressBar.Small.Inverse"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:id="@+id/LocationProgress"
+            android:layout_marginLeft="4dp"
+            android:indeterminate="true"
+            android:visibility="gone" />
+    </LinearLayout>
+    <ListView
+        android:minWidth="25px"
+        android:minHeight="60px"
+        android:layout_width="fill_parent"
+        android:layout_height="fill_parent"
+        android:id="@+id/CompletionList"
+        android:layout_marginLeft="8dp"
+        android:layout_marginRight="8dp"
+        android:layout_marginBottom="8dp" />
+</LinearLayout>

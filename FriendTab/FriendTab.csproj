@@ -1,0 +1,146 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProductVersion>10.0.0</ProductVersion>
+    <SchemaVersion>2.0</SchemaVersion>
+    <ProjectGuid>{ADB6F958-66C1-45D2-BB54-54F9506BEFFE}</ProjectGuid>
+    <ProjectTypeGuids>{EFBA0AD7-5A72-4C68-AF49-83D382785DCF};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
+    <OutputType>Library</OutputType>
+    <RootNamespace>FriendTab</RootNamespace>
+    <MonoAndroidResourcePrefix>Resources</MonoAndroidResourcePrefix>
+    <MonoAndroidAssetsPrefix>Assets</MonoAndroidAssetsPrefix>
+    <AndroidResgenClass>Resource</AndroidResgenClass>
+    <AndroidApplication>True</AndroidApplication>
+    <AndroidResgenFile>Resources\Resource.designer.cs</AndroidResgenFile>
+    <AssemblyName>FriendTab</AssemblyName>
+    <TargetFrameworkVersion>v4.0.3</TargetFrameworkVersion>
+    <AndroidManifest>Properties\AndroidManifest.xml</AndroidManifest>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>True</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>False</Optimize>
+    <OutputPath>bin\Debug</OutputPath>
+    <DefineConstants>DEBUG;</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <ConsolePause>False</ConsolePause>
+    <AndroidLinkMode>None</AndroidLinkMode>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>none</DebugType>
+    <Optimize>True</Optimize>
+    <OutputPath>bin\Release</OutputPath>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <ConsolePause>False</ConsolePause>
+    <AndroidUseSharedRuntime>False</AndroidUseSharedRuntime>
+    <AndroidLinkMode>SdkOnly</AndroidLinkMode>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="System" />
+    <Reference Include="System.Core" />
+    <Reference Include="Mono.Android" />
+    <Reference Include="Parse">
+      <HintPath>lib\Parse.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="Resources\Resource.designer.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="LandingActivity.cs" />
+    <Compile Include="ParticipantSelectionFragment.cs" />
+    <Compile Include="MainActivity.cs" />
+    <Compile Include="ActivityFragment.cs" />
+    <Compile Include="ActivityItemAdapter.cs" />
+    <Compile Include="Widgets\ColorSeparator.cs" />
+    <Compile Include="Widgets\CategoryBadge.cs" />
+    <Compile Include="Widgets\TapUserBadge.cs" />
+    <Compile Include="Widgets\KarmaMeter.cs" />
+    <Compile Include="Widgets\ImageRing.cs" />
+    <Compile Include="Widgets\InsetTextView.cs" />
+    <Compile Include="DataObjects\TabObject.cs" />
+    <Compile Include="DataObjects\TabPerson.cs" />
+    <Compile Include="DataObjects\NoParseDataException.cs" />
+    <Compile Include="DataObjects\AndroidPerson.cs" />
+    <Compile Include="DataObjects\SelectedUserInfo.cs" />
+    <Compile Include="Locator.cs" />
+    <Compile Include="DataObjects\TabType.cs" />
+    <Compile Include="Widgets\ActivityItem.cs" />
+    <Compile Include="Storage\DiskCache.cs" />
+    <Compile Include="Storage\LruCache.cs" />
+    <Compile Include="Storage\BitmapCache.cs" />
+    <Compile Include="Widgets\Arrow.cs" />
+    <Compile Include="Widgets\FadeImageView.cs" />
+    <Compile Include="Widgets\AskLocationDialog.cs" />
+    <Compile Include="DataObjects\TabPlace.cs" />
+    <Compile Include="Widgets\ExpandHelper.cs" />
+    <Compile Include="Widgets\ExpandableListView.cs" />
+    <Compile Include="Widgets\DoubleSwipeDetector.cs" />
+    <Compile Include="SvgUtils.cs" />
+    <Compile Include="Widgets\FlashBarController.cs" />
+    <Compile Include="Widgets\VignetteDrawable.cs" />
+    <Compile Include="SerialScheduler.cs" />
+    <Compile Include="ParseCredentials.cs" />
+    <Compile Include="DensityExtensions.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Assets\AboutAssets.txt" />
+    <None Include="Properties\AndroidManifest.xml" />
+    <None Include="SignUpActivity.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <AndroidResource Include="Resources\layout\Main.axml" />
+    <AndroidResource Include="Resources\values\Strings.xml" />
+    <AndroidResource Include="Resources\layout\ParticipantSelectionLayout.axml" />
+    <AndroidResource Include="Resources\layout\TapBadge.axml" />
+    <AndroidResource Include="Resources\layout\ActivityItemLayout.axml" />
+    <AndroidResource Include="Resources\layout\ActivityLayout.axml" />
+    <AndroidResource Include="Resources\drawable-nodpi\LandingBackground.png" />
+    <AndroidResource Include="Resources\drawable-nodpi\box.xml" />
+    <AndroidResource Include="Resources\drawable-nodpi\header.xml" />
+    <AndroidResource Include="Resources\drawable-nodpi\aitemfooter.xml" />
+    <AndroidResource Include="Resources\drawable-nodpi\aitemborder.xml" />
+    <AndroidResource Include="Resources\drawable-nodpi\aitemring.xml" />
+    <AndroidResource Include="Resources\drawable-nodpi\boxdrag.xml" />
+    <AndroidResource Include="Resources\layout\AskLocationLayout.axml" />
+    <AndroidResource Include="Resources\drawable-nodpi\bottom_divider_glow.png" />
+    <AndroidResource Include="Resources\drawable-nodpi\top_divider_glow.png" />
+    <AndroidResource Include="Resources\drawable-nodpi\gmaps.png" />
+    <AndroidResource Include="Resources\layout\SignupPage.axml" />
+    <AndroidResource Include="Resources\drawable-nodpi\whitering.xml" />
+    <AndroidResource Include="Resources\values\styles.xml" />
+    <AndroidResource Include="Resources\drawable-nodpi\flashbar_button.xml" />
+    <AndroidResource Include="Resources\drawable-xhdpi\flashbar.9.png" />
+    <AndroidResource Include="Resources\drawable-xhdpi\flashbar_button_focused.9.png" />
+    <AndroidResource Include="Resources\drawable-xhdpi\flashbar_button_pressed.9.png" />
+    <AndroidResource Include="Resources\drawable-xhdpi\flashbar_divider.9.png" />
+    <AndroidResource Include="Resources\drawable-xhdpi\ic_menu_refresh.png" />
+    <AndroidResource Include="Resources\menu\activity_menu.xml" />
+    <AndroidResource Include="Resources\drawable-nodpi\ic_contact_picture.svg" />
+    <AndroidResource Include="Resources\drawable-hdpi\Icon.png" />
+    <AndroidResource Include="Resources\drawable-xhdpi\Icon.png" />
+    <AndroidResource Include="Resources\drawable-mdpi\Icon.png" />
+  </ItemGroup>
+  <Import Project="$(MSBuildExtensionsPath)\Novell\Novell.MonoDroid.CSharp.targets" />
+  <ItemGroup>
+    <Folder Include="Resources\menu\" />
+    <Folder Include="Widgets\" />
+    <Folder Include="DataObjects\" />
+    <Folder Include="Storage\" />
+    <Folder Include="Resources\drawable-xhdpi\" />
+    <Folder Include="Resources\drawable-hdpi\" />
+    <Folder Include="Resources\drawable-mdpi\" />
+  </ItemGroup>
+  <ItemGroup>
+    <AndroidJavaLibrary Include="lib\Parse-1.1.6.jar" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\FooSvg\FooSvg.csproj">
+      <Project>{42F9995C-EE4A-4ACD-9437-86BBFAFA39A1}</Project>
+      <Name>FooSvg</Name>
+    </ProjectReference>
+  </ItemGroup>
+</Project>

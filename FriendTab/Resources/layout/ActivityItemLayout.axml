@@ -1,0 +1,162 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical"
+    android:layout_width="fill_parent"
+    android:layout_height="wrap_content">
+    <View
+        android:id="@+id/TopGlow"
+        android:alpha="0"
+        android:visibility="invisible"
+        android:layout_width="match_parent"
+        android:layout_height="3dp"
+        android:layout_gravity="top|center_horizontal"
+        android:background="@drawable/top_divider_glow" />
+    <LinearLayout
+        android:orientation="vertical"
+        android:layout_width="fill_parent"
+        android:layout_height="fill_parent"
+        android:background="@drawable/aitemborder">
+        <FrameLayout
+            android:minWidth="25px"
+            android:minHeight="25px"
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+            android:id="@+id/mainFrame"
+            android:background="#ffff4444"
+            android:padding="8dp"
+            android:layout_marginLeft="1px"
+            android:layout_marginRight="1px"
+            android:layout_marginTop="1px">
+            <LinearLayout
+                android:orientation="horizontal"
+                android:minWidth="25px"
+                android:minHeight="25px"
+                android:layout_width="wrap_content"
+                android:layout_height="fill_parent"
+                android:id="@+id/linearLayout1"
+                android:layout_gravity="center">
+                <FriendTab.FadeImageView
+                    android:layout_width="64dp"
+                    android:layout_height="64dp"
+                    android:id="@+id/ContactPicture"
+                    android:layout_gravity="center" />
+                <TextView
+                    android:text="Jeremie"
+                    android:textAppearance="?android:attr/textAppearanceMedium"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:id="@+id/ContactName"
+                    android:layout_gravity="center_vertical"
+                    android:textColor="#eeeeee"
+                    android:layout_marginLeft="8dp"
+                    android:minEms="5" />
+                <TextView
+                    android:text="↝"
+                    android:textAppearance="?android:attr/textAppearanceSmall"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:id="@+id/HeaderSeparator"
+                    android:layout_gravity="center"
+                    android:textColor="#80000000"
+                    android:layout_marginLeft="8dp"
+                    android:layout_marginRight="12dp" />
+                <FrameLayout
+                    android:minWidth="25px"
+                    android:minHeight="25px"
+                    android:layout_width="80dp"
+                    android:layout_height="80dp"
+                    android:id="@+id/frameLayout1"
+                    android:layout_gravity="center"
+                    android:background="@drawable/aitemring">
+                    <ImageView
+                        android:layout_width="fill_parent"
+                        android:layout_height="fill_parent"
+                        android:id="@+id/ItemPicture"
+                        android:scaleType="center" />
+                </FrameLayout>
+            </LinearLayout>
+        </FrameLayout>
+        <LinearLayout
+            android:orientation="horizontal"
+            android:minWidth="25px"
+            android:minHeight="25px"
+            android:layout_width="fill_parent"
+            android:layout_height="6dp"
+            android:id="@+id/secondaryFrame"
+            android:background="#ffcc0000"
+            android:layout_marginLeft="1px"
+            android:layout_marginRight="1px" />
+        <FriendTab.FadeImageView
+            android:layout_width="fill_parent"
+            android:layout_height="0px"
+            android:id="@+id/MapPicture"
+            android:scaleType="centerCrop"
+            android:layout_marginLeft="1px"
+            android:layout_marginRight="1px" />
+        <FrameLayout
+            android:minWidth="25px"
+            android:minHeight="25px"
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+            android:id="@+id/frameLayout3">
+            <RelativeLayout
+                android:minWidth="25px"
+                android:minHeight="25px"
+                android:layout_width="fill_parent"
+                android:layout_height="fill_parent"
+                android:id="@+id/relativeLayout1"
+                android:background="@drawable/aitemfooter">
+                <TextView
+                    android:text="At:"
+                    android:textAppearance="?android:attr/textAppearanceMedium"
+                    android:id="@+id/atStatic"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_alignParentLeft="true"
+                    android:textColor="#7d7d7d" />
+                <TextView
+                    android:text="Some streetname, Town"
+                    android:textAppearance="?android:attr/textAppearanceMedium"
+                    android:id="@+id/locationInfo"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_toRightOf="@id/atStatic"
+                    android:textColor="#414141"
+                    android:layout_marginLeft="4dp"
+                    android:ellipsize="marquee"
+                    android:ems="8"
+                    android:singleLine="true" />
+                <TextView
+                    android:text="Some date, 20:00"
+                    android:textAppearance="?android:attr/textAppearanceMedium"
+                    android:id="@+id/timeInfo"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_alignParentRight="true"
+                    android:textColor="#414141"
+                    android:lines="1" />
+                <TextView
+                    android:text="On:"
+                    android:textAppearance="?android:attr/textAppearanceMedium"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:id="@+id/onStatic"
+                    android:layout_toLeftOf="@id/timeInfo"
+                    android:textColor="#7d7d7d"
+                    android:layout_marginRight="4dp" />
+            </RelativeLayout>
+        </FrameLayout>
+    </LinearLayout>
+    <View
+        android:id="@+id/BottomGlow"
+        android:alpha="0"
+        android:visibility="invisible"
+        android:layout_width="match_parent"
+        android:layout_height="3dp"
+        android:layout_gravity="bottom|center_horizontal"
+        android:background="@drawable/bottom_divider_glow" />
+    <Space
+        android:layout_width="fill_parent"
+        android:layout_height="8dp"
+        android:id="@+id/space1" />
+</LinearLayout>

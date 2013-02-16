@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical"
+    android:layout_width="fill_parent"
+    android:layout_height="fill_parent"
+    android:minWidth="25px"
+    android:minHeight="25px"
+    android:id="@+id/LandingBackground"
+    android:background="@drawable/LandingBackground">
+    <Space
+        android:layout_width="fill_parent"
+        android:layout_height="280px"
+        android:id="@+id/space1" />
+    <LinearLayout
+        android:orientation="vertical"
+        android:minWidth="25px"
+        android:minHeight="25px"
+        android:layout_width="wrap_content"
+        android:layout_height="fill_parent"
+        android:id="@+id/linearLayout1"
+        android:layout_weight="1"
+        android:layout_marginBottom="16dp"
+        android:layout_marginLeft="4dp"
+        android:layout_marginRight="4dp"
+        android:layout_gravity="center">
+        <EditText
+            android:inputType="textEmailAddress"
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+            android:id="@+id/EmailEntry"
+            android:hint="Email"
+            android:textSize="25dp"
+            android:minEms="13" />
+        <EditText
+            android:inputType="textPassword"
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+            android:id="@+id/PasswordEntry"
+            android:minEms="10"
+            android:hint="Password"
+            android:textSize="25dp"
+            android:layout_marginBottom="32dp" />
+        <Button
+            android:text="Sign In"
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+            android:id="@+id/SignInButton"
+            android:layout_marginBottom="8dp" />
+        <Button
+            android:text="Sign Up"
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+            android:id="@+id/SignUpButton" />
+    </LinearLayout>
+</LinearLayout>

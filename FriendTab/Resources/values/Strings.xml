@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+	<string name="app_name">FriendTab</string>
+	<string name="login_error">
+		An error occured while logging in, make sure your credentials are correct.\n\n
+		If you are signing up, your email might already be in use
+	</string>
+	<string name="flashbar_tab_error">Network error, couldn\&apos;t save tab</string>
+	<string name="flashbar_stats_error">Error when updating statistics</string>
+</resources>

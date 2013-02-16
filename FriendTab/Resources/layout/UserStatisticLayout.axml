@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:padding="10dp"
+    android:layout_marginLeft="25dp"
+    android:layout_marginRight="25dp"
+    android:background="@drawable/box">
+    <TextView
+        android:text="Alan McGovern"
+        android:textAppearance="?android:attr/textAppearanceSmall"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:id="@+id/UserName" />
+    <LinearLayout
+        android:orientation="horizontal"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content">
+        <LinearLayout
+            android:orientation="vertical"
+            android:minWidth="25px"
+            android:minHeight="25px"
+            android:layout_width="wrap_content"
+            android:layout_height="fill_parent"
+            android:id="@+id/linearLayout1"
+            android:layout_marginTop="18px"
+            android:layout_marginRight="32dp">
+            <ImageView
+                android:id="@+id/UserHead"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:src="@drawable/ic_contact_picture" />
+            <FriendTab.KarmaMeter
+                android:id="@+id/KarmaBar"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp" />
+            <TextView
+                android:text="KarmaBar"
+                android:textAppearance="?android:attr/textAppearanceSmall"
+                android:layout_width="fill_parent"
+                android:layout_height="wrap_content"
+                android:id="@+id/textView6"
+                android:gravity="center"
+                android:textScaleX="0.6" />
+        </LinearLayout>
+        <TableLayout
+            android:minWidth="25px"
+            android:minHeight="25px"
+            android:layout_width="wrap_content"
+            android:layout_height="fill_parent"
+            android:id="@+id/statsTable"
+            android:shrinkColumns="2, 3"
+            android:stretchColumns="1"
+            android:layout_weight="1"
+            android:layout_marginLeft="5dp">
+            <TableRow
+                android:id="@+id/tableRow1">
+                <Space
+                    android:layout_column="1"
+                    android:id="@+id/space1"
+                    android:layout_height="24dp" />
+                <ImageView
+                    android:src="@drawable/greenarrow"
+                    android:layout_column="2"
+                    android:layout_gravity="top"
+                    android:scaleType="centerInside" />
+                <ImageView
+                    android:src="@drawable/redarrow"
+                    android:layout_column="3"
+                    android:layout_gravity="top"
+                    android:scaleType="centerInside" />
+            </TableRow>
+        </TableLayout>
+    </LinearLayout>
+</LinearLayout>
