@@ -3,14 +3,16 @@ FriendTab
 
 FriendTab is a simple [Mono for Android](http://xamarin.com/monoforandroid) application to help you track what you owe to your friends and what they owe you. It's for those folks like me who like to keep things even.
 
-Alternatively, it's a testbed for various technique available in Android and put down in C# form. Since this project is licensed under the term of the *Apache License 2.0*, you are most welcome to dive into it and reuse whichever parts you want in your own projects.
+Alternatively, it's a testbed for various technique available in Android and put down in C# form. Since this project is licensed under the term of the [Apache License 2.0](http://www.apache.org/licenses/LICENSE-2.0), you are most welcome to dive into it and reuse whichever parts you want in your own projects.
 
 More info on the development on the introductory blog post: *TODO*
 
 Privacy Notice
 ==============
 
-FriendTab uses your email address and those of your contacts to uniquely identify persons. Since the system doesn't really care about those address, it **only** uses a MD5 hashed version of them. We don't mirror avatar pictures either.
+FriendTab uses your email address and those of your contacts to uniquely identify persons. Since the system doesn't really care about those address, it **only** uses a MD5 hashed version of them which is enough for identification.
+
+It doesn't mirror avatar pictures either and will instead store the contact row ID and lookup ID to load them up when needed.
 
 In the end, the only clear bits that are stored in the database are the full name of your contacts and your geographical position when registering a new tab (and the location name if you put it).
 
@@ -21,9 +23,9 @@ Compilation / install
 
 FriendTab uses [Parse](https://parse.com/) as its backend. You can set up your own Parse account at https://parse.com/signup and use your credentials by setting the values in `FriendTab/FriendTab/ParseCredentials.cs` to have your own personalized instance.
 
-The free account gives you a million API call per month which should be more than enough for most usage.
+You can import [ParseType.json](https://github.com/garuma/FriendTab/blob/master/ParseType.json) if you want to bootstrap a set of initial tab types.
 
-You can also download the following package to test with the development version backend (no guarantee on your data for now): [APK file](http://neteril.org/friendtab/FriendTab.apk).
+FriendTab is also available [from the Google Play Store](https://play.google.com/store/apps/details?id=org.neteril.friendtab) if you want to give it a test drive on the development Parse backend.
 
 How-To Use
 ==========
@@ -46,7 +48,7 @@ By tapping on the badge, you can select one of your contact through the normal A
 
 Additionaly if counts are available, a karma bar will also be displayed under the contact information to give you an overall score of your relationship (red is bad, green is good).
 
-To register a new tab, simply long-tap one of the tab type icon until a drag operation is started and the user badge changes form to show both you and your contact avatars. You can then drop that drag on either image to register a tab, dropping on your head will induce a *given* operation while dropping on your contact head will induce a *gave* operation:
+To register a new tab, simply long-tap one of the tab type icon until a drag operation is started and the user badge changes to show both you and your contact avatars. You can then drop the dragged item on either vignette to register a tab, dropping on your head will induce a *given* operation while dropping on your contact head will induce a *gave* operation:
 
 ![main-view-dragging](http://neteril.org/friendtab/screenshots-with-device/main-view-dragging.png)
 
@@ -67,3 +69,13 @@ You can use a two-fingers swipe down and up on a list item to reveal a Google ma
 
 ![activity-view-mapextended](http://neteril.org/friendtab/screenshots-with-device/activity-view-mapextended.png)
 
+Credits
+=======
+
+The tab type logos are taken from [The Noun Project](http://thenounproject.com/)
+
+Some code in this app has been adapted from:
+
+- The Android Open Source Project
+- [Roman Nurik](http://roman.nurik.net/)
+- [Romain Guy](http://www.curious-creature.org/2012/12/11/android-recipe-1-image-with-rounded-corners/)
