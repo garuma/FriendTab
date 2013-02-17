@@ -23,7 +23,7 @@ Compilation / install
 
 FriendTab uses [Parse](https://parse.com/) as its backend. You can set up your own Parse account at https://parse.com/signup and use your credentials by setting the values in `FriendTab/FriendTab/ParseCredentials.cs` to have your own personalized instance.
 
-You can import [ParseType.json](https://github.com/garuma/FriendTab/blob/master/ParseType.json) if you want to bootstrap a set of initial tab types.
+You can import [TabType.json](https://github.com/garuma/FriendTab/blob/master/TabType.json) if you want to bootstrap a set of initial tab types.
 
 FriendTab is also available [from the Google Play Store](https://play.google.com/store/apps/details?id=org.neteril.friendtab) if you want to give it a test drive on the development Parse backend.
 
