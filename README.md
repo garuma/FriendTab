@@ -12,7 +12,7 @@ Privacy Notice
 
 FriendTab uses your email address and those of your contacts to uniquely identify persons. Since the system doesn't really care about those address, it **only** uses a MD5 hashed version of them which is enough for identification.
 
-It doesn't mirror avatar pictures either and will instead store the contact row ID and lookup ID to load them up when needed.
+It doesn't mirror avatar pictures either and will instead store the contact row ID and lookup ID to load them up when needed from your device contacts database.
 
 In the end, the only clear bits that are stored in the database are the full name of your contacts and your geographical position when registering a new tab (and the location name if you put it).
 
@@ -26,6 +26,8 @@ FriendTab uses [Parse](https://parse.com/) as its backend. You can set up your o
 You can import [TabType.json](https://github.com/garuma/FriendTab/blob/master/TabType.json) if you want to bootstrap a set of initial tab types.
 
 FriendTab is also available [from the Google Play Store](https://play.google.com/store/apps/details?id=org.neteril.friendtab) if you want to give it a test drive on the development Parse backend.
+
+[![google-play](https://developer.android.com/images/brand/en_generic_rgb_wo_45.png)](https://play.google.com/store/apps/details?id=org.neteril.friendtab)
 
 How-To Use
 ==========
