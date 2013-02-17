@@ -5,7 +5,7 @@ FriendTab is a simple [Mono for Android](http://xamarin.com/monoforandroid) appl
 
 Alternatively, it's a testbed for various technique available in Android and put down in C# form. Since this project is licensed under the term of the [Apache License 2.0](http://www.apache.org/licenses/LICENSE-2.0), you are most welcome to dive into it and reuse whichever parts you want in your own projects.
 
-More info on the development on the introductory blog post: *TODO*
+More info on the development on the introductory [blog post](https://blog.neteril.org/blog/2013/02/17/friendtab-initial-release/).
 
 Privacy Notice
 ==============
