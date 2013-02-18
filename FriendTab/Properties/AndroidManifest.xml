@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android" android:versionCode="1" android:versionName="1.0" package="org.neteril.friendtab">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android" android:versionCode="2" android:versionName="1.0" package="org.neteril.friendtab">
 	<uses-sdk android:minSdkVersion="14" android:targetSdkVersion="16" />
 	<application android:label="FriendTab" android:icon="@drawable/icon" theme="@android:style/Theme.Holo.Light.DarkActionBar" />
 	<uses-permission android:name="android.permission.INTERNET" />
