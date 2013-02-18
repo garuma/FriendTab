@@ -95,9 +95,17 @@ namespace FriendTab
 			};
 
 			signInBtn.Click += (sender, e) => {
+				string email;
+				if (!TryExtractEmailFromRawInput (userEntry.Text, out email)) {
+					var builder = new AlertDialog.Builder (this);
+					builder.SetMessage (Resource.String.invalid_email);
+					builder.SetPositiveButton ("OK", (a, b) => userEntry.Text = string.Empty);
+					builder.Create ().Show ();
+					return;
+				}
 				spinDialog.SetMessage ("Signing in...");
 				spinDialog.Show ();
-				ParseUser.LogInInBackground (userEntry.Text,
+				ParseUser.LogInInBackground (email,
 				                             passwordEntry.Text,
 				                             new TabLoginCallback (callback));
 			};
