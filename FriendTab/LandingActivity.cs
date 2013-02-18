@@ -2,6 +2,7 @@ using System;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Collections.Generic;
+using System.Net.Mail;
 
 using Android.App;
 using Android.Content;
@@ -101,11 +102,21 @@ namespace FriendTab
 				                             new TabLoginCallback (callback));
 			};
 			signUpBtn.Click += (sender, e) => {
+				string email;
+				if (!TryExtractEmailFromRawInput (userEntry.Text, out email)) {
+					var builder = new AlertDialog.Builder (this);
+					builder.SetMessage (Resource.String.invalid_email);
+					builder.SetPositiveButton ("OK", (a, b) => userEntry.Text = string.Empty);
+					builder.Create ().Show ();
+					return;
+				}
+
 				spinDialog.SetMessage ("Signing up...");
 				spinDialog.Show ();
+
 				var user = new ParseUser () {
-					Username = userEntry.Text,
-					Email = userEntry.Text
+					Username = email,
+					Email = email
 				};
 				user.SetPassword (passwordEntry.Text);
 				user.SignUpInBackground (new TabSignUpCallback (user, callback));
@@ -163,7 +174,7 @@ namespace FriendTab
 					// If the user was created, we setup a CursorLoader to query the information we need
 					if (t.Result != null) {
 						var person = t.Result;
-						person.DisplayName = profile.DisplayName;
+						person.DisplayName = string.IsNullOrEmpty (profile.DisplayName) ? MakeNameFromEmail (withUser.Email) : profile.DisplayName;
 						person.Emails = profile.Emails.Union (person.Emails);
 						person.ToParse ().SaveEventually ();
 						TabPerson.CurrentPerson = person;
@@ -175,6 +186,28 @@ namespace FriendTab
 					ctx.StartActivity (typeof (MainActivity));
 				});
 			});
+		}
+
+		string MakeNameFromEmail (string email)
+		{
+			try {
+				var address = new MailAddress (email);
+				return string.IsNullOrEmpty (address.DisplayName) ? address.User : address.DisplayName;
+			} catch {
+				return email;
+			}
+		}
+
+		bool TryExtractEmailFromRawInput (string rawEmail, out string result)
+		{
+			result = null;
+			try {
+				var mail = new MailAddress (rawEmail);
+				result = mail.Address;
+				return true;
+			} catch {
+				return false;
+			}
 		}
 
 		Task<bool> CheckLoginDisponibility (string login)
@@ -207,41 +240,47 @@ namespace FriendTab
 			public static UserProfile Instantiate (Activity ctx)
 			{
 				var profile = new UserProfile ();
+				profile.Emails = new HashSet<string> ();
+
 				var projs = new[] {
 					ContactsContract.Profile.InterfaceConsts.DisplayName
 				};
-				var cursor = ctx.ContentResolver.Query (ContactsContract.Profile.ContentUri,
-				                                        projs,
-				                                        null, null, null);
-				if (cursor.MoveToFirst ()) {
-					profile.DisplayName = cursor.GetString (cursor.GetColumnIndex (projs[0]));
-					cursor.Close ();
-					cursor.Dispose ();
 
-					var uri = Android.Net.Uri.WithAppendedPath (ContactsContract.Profile.ContentUri,
-					                                            ContactsContract.Contacts.Data.ContentDirectory);
-					projs = new[] {
-						ContactsContract.CommonDataKinds.Email.Address,
-						ContactsContract.CommonDataKinds.Email.InterfaceConsts.IsPrimary
-					};
-					// Get emails
-					var emailCursor = ctx.ContentResolver.Query (uri,
-					                                             projs,
-					                                             ContactsContract.Contacts.Data.InterfaceConsts.Mimetype + " = ?",
-					                                             new[] { ContactsContract.CommonDataKinds.Email.ContentItemType }, null);
-					profile.Emails = new HashSet<string> ();
-					while (emailCursor.MoveToNext ()) {
-						var email = emailCursor.GetString (emailCursor.GetColumnIndex (projs[0]));
-						profile.Emails.Add (email);
-						var isPrimaryColumn = emailCursor.GetColumnIndex (projs[1]);
-						var isPrimary = isPrimaryColumn != -1 && emailCursor.GetInt (isPrimaryColumn) > 0;
-						if (isPrimary)
-							profile.PrimayAddress = email;
+				try {
+					var cursor = ctx.ContentResolver.Query (ContactsContract.Profile.ContentUri,
+					                                        projs,
+					                                        null, null, null);
+					if (cursor.MoveToFirst ()) {
+						profile.DisplayName = cursor.GetString (cursor.GetColumnIndex (projs[0]));
+						cursor.Close ();
+						cursor.Dispose ();
+
+						var uri = Android.Net.Uri.WithAppendedPath (ContactsContract.Profile.ContentUri,
+						                                            ContactsContract.Contacts.Data.ContentDirectory);
+						projs = new[] {
+							ContactsContract.CommonDataKinds.Email.Address,
+							ContactsContract.CommonDataKinds.Email.InterfaceConsts.IsPrimary
+						};
+						// Get emails
+						var emailCursor = ctx.ContentResolver.Query (uri,
+						                                             projs,
+						                                             ContactsContract.Contacts.Data.InterfaceConsts.Mimetype + " = ?",
+						                                             new[] { ContactsContract.CommonDataKinds.Email.ContentItemType }, null);
+						while (emailCursor.MoveToNext ()) {
+							var email = emailCursor.GetString (emailCursor.GetColumnIndex (projs[0]));
+							profile.Emails.Add (email);
+							var isPrimaryColumn = emailCursor.GetColumnIndex (projs[1]);
+							var isPrimary = isPrimaryColumn != -1 && emailCursor.GetInt (isPrimaryColumn) > 0;
+							if (isPrimary)
+								profile.PrimayAddress = email;
+						}
+						if (profile.PrimayAddress == null && profile.Emails.Count == 1)
+							profile.PrimayAddress = profile.Emails.First ();
+						emailCursor.Close ();
+						emailCursor.Dispose ();
 					}
-					if (profile.PrimayAddress == null && profile.Emails.Count == 1)
-						profile.PrimayAddress = profile.Emails.First ();
-					emailCursor.Close ();
-					emailCursor.Dispose ();
+				} catch (Exception e) {
+					Android.Util.Log.Error ("ProfileFetcher", "Unable to read profile: {0}", e.ToString ());
 				}
 
 				return profile;

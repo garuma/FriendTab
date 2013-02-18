@@ -5,6 +5,7 @@
 		An error occured while logging in, make sure your credentials are correct.\n\n
 		If you are signing up, your email might already be in use
 	</string>
+	<string name="invalid_email">The email you typed is invalid.</string>
 	<string name="flashbar_tab_error">Network error, couldn\&apos;t save tab</string>
 	<string name="flashbar_stats_error">Error when updating statistics</string>
 </resources>
