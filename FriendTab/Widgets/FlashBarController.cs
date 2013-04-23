@@ -15,6 +15,7 @@
  */
 
 using System;
+using System.Threading;
 using System.Threading.Tasks;
 
 using Android.Animation;
@@ -29,12 +30,11 @@ namespace FriendTab
 	{
 		View barView;
 		TextView messageView;
+		Button flashBarBtn;
 		ViewPropertyAnimator barAnimator;
 		Handler hideHandler = new Handler();
 
 		string message;
-		Action hideRunnable;
-		Action flashBarCallback;
 
 		const int DefaultHideTime = 5000;
 		
@@ -44,30 +44,12 @@ namespace FriendTab
 			barAnimator = barView.Animate ();
 
 			messageView = barView.FindViewById<TextView> (Resource.Id.flashbar_message);
-			var flashBarBtn = barView.FindViewById<Button> (Resource.Id.flashbar_button);
-			flashBarBtn.Click += delegate {
-				HideBar (false);
-				if (flashBarCallback != null)
-					flashBarCallback ();
-			};
-			hideRunnable = () => HideBar(false);
-			
+			flashBarBtn = barView.FindViewById<Button> (Resource.Id.flashbar_button);
+
 			HideBar (true);
 		}
 
-		public void ShowBarUntil (Func<bool> flashBarCallback, bool immediate = false, string withMessage = null, int withMessageId = -1)
-		{
-			Action callback = () => {
-				var t = SerialScheduler.Factory.StartNew (flashBarCallback);
-				t.ContinueWith (_ => {
-					if (t.Exception != null || !t.Result)
-						hideHandler.Post (() => ShowBarUntil (flashBarCallback, immediate, withMessage, withMessageId));
-				});
-			};
-			ShowBar (callback, immediate, withMessage, withMessageId);
-		}
-		
-		public void ShowBar (Action flashBarCallback, bool immediate = false, string withMessage = null, int withMessageId = -1)
+		public async Task<bool> ShowBarAsync (bool immediate = false, string withMessage = null, int withMessageId = -1)
 		{
 			if (withMessage != null) {
 				this.message = withMessage;
@@ -78,9 +60,13 @@ namespace FriendTab
 				messageView.Text = message;
 			}
 
-			this.flashBarCallback = flashBarCallback;
-			hideHandler.RemoveCallbacks (hideRunnable);
+			var tcs = new TaskCompletionSource<bool> ();
+
+			Action hideRunnable = () => { HideBar (false); tcs.TrySetResult (false); };
 			hideHandler.PostDelayed (hideRunnable, DefaultHideTime);
+
+			EventHandler clickHandler = (s, e) => { HideBar (true); tcs.TrySetResult (true); };
+			flashBarBtn.Click += clickHandler;
 
 			barView.Visibility = ViewStates.Visible;
 			if (immediate) {
@@ -91,11 +77,17 @@ namespace FriendTab
 				barAnimator.SetDuration (barView.Resources.GetInteger (Android.Resource.Integer.ConfigShortAnimTime));
 				barAnimator.SetListener (null);
 			}
+
+			await tcs.Task;
+
+			flashBarBtn.Click -= clickHandler;
+			hideHandler.RemoveCallbacks (hideRunnable);
+
+			return tcs.Task.Result;
 		}
 		
 		public void HideBar (bool immediate = false)
 		{
-			hideHandler.RemoveCallbacks (hideRunnable);
 			if (immediate) {
 				barView.Visibility = ViewStates.Gone;
 				barView.Alpha = 0;

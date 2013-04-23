@@ -3,7 +3,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Collections.Generic;
 
-using ParseLib;
+using Parse;
 
 namespace FriendTab
 {
@@ -31,66 +31,63 @@ namespace FriendTab
 		public static TabObject FromParse (ParseObject parseObject)
 		{
 			return new TabObject {
-				Originator = TabPerson.FromParse (parseObject.GetParseObject ("originator")),
-				Recipient = TabPerson.FromParse (parseObject.GetParseObject ("recipient")),
-				Direction = (TabDirection)parseObject.GetInt ("direction"),
-				Type = TabType.FromParse (parseObject.GetParseObject ("tabType")),
-				LatLng = GeopointToTuple (parseObject.GetParseGeoPoint ("location")),
-				LocationDesc = parseObject.GetString ("locationDesc"),
-				Time = JavaDateToDateTime (parseObject.GetDate ("time")),
+				Originator = TabPerson.FromParse (parseObject.Get<ParseObject> ("originator")),
+				Recipient = TabPerson.FromParse (parseObject.Get<ParseObject> ("recipient")),
+				Direction = (TabDirection)parseObject.Get<int> ("direction"),
+				Type = TabType.FromParse (parseObject.Get<ParseObject> ("tabType")),
+				LatLng = GeopointToTuple (parseObject.Get<ParseGeoPoint> ("location")),
+				LocationDesc = parseObject.Get<string> ("locationDesc"),
+				Time = parseObject.Get<DateTime> ("time"),
 				parseData = parseObject
 			};
 		}
 
-		public static Task ExpandParseObject (ParseObject obj)
+		public static async Task ExpandParseObject (ParseObject obj)
 		{
 			if (obj == null)
 				throw new ArgumentNullException ("obj");
 
 			var objs = new ParseObject[] {
-				obj.GetParseObject ("originator"),
-				obj.GetParseObject ("recipient"),
-				obj.GetParseObject ("tabType"),
+				obj.Get<ParseObject> ("originator"),
+				obj.Get<ParseObject> ("recipient"),
+				obj.Get<ParseObject> ("tabType"),
 			};
-
-			return Task.Factory.StartNew (() => {
-				foreach (var o in objs)
-					o.FetchIfNeeded ();
-			});
+			foreach (var o in objs)
+				await o.FetchIfNeededAsync ().ConfigureAwait (false);
 		}
 
-		public static ParseQuery CreateTabQuery (ParseObject self, ParseObject p, ParseObject tabType, int way)
+		public static ParseQuery<ParseObject> CreateTabListQuery (ParseObject self, ParseObject p)
 		{
-			var query = ParseQuery.Or (new ParseQuery[] {
-				new ParseQuery ("Tab")
-					.WhereEqualTo ("originator", p)
-					.WhereEqualTo ("recipient", self)
-					.WhereEqualTo ("direction", way > 0 ? (int)TabDirection.Receiving : (int)TabDirection.Giving),
-				new ParseQuery ("Tab")
-					.WhereEqualTo ("recipient", p)
-					.WhereEqualTo ("originator", self)
-					.WhereEqualTo ("direction", way > 0 ? (int)TabDirection.Giving : (int)TabDirection.Receiving),
-			});
-			query.WhereEqualTo ("tabType", tabType);
-
+			var query = ParseQuery<ParseObject>.Or (new [] {
+				   ParseObject.GetQuery ("Tab")
+					    .Where (t => t["originator"] == p)
+						.Where (t => t["recipient"] == self),
+				   ParseObject.GetQuery ("Tab")
+						.Where (t => t["recipient"] == p)
+			            .Where (t => t["originator"] == self)
+			    })
+				.Include ("originator")
+				.Include ("recipient")
+				.Include ("tabType");
+			
 			return query;
 		}
 
-		public static ParseQuery CreateTabListQuery (ParseObject self, ParseObject p)
+		public static ParseQuery<ParseObject> CreateTabActivityListQuery (int skip = 0, int limit = 10)
 		{
-			var query = ParseQuery.Or (new ParseQuery[] {
-				new ParseQuery ("Tab")
-					.WhereEqualTo ("originator", p)
-					.WhereEqualTo ("recipient", self),
-				new ParseQuery ("Tab")
-					.WhereEqualTo ("recipient", p)
-					.WhereEqualTo ("originator", self)
-			});
-			// Include the field we need
-			query.Include ("originator");
-			query.Include ("recipient");
-			query.Include ("tabType");
-			
+			var current = TabPerson.CurrentPerson.ToParse ();
+			var query = ParseQuery<ParseObject>.Or (new [] {
+				  ParseObject.GetQuery ("Tab").Where (t => t.Get<ParseObject> ("originator") == current),
+				  ParseObject.GetQuery ("Tab").Where (t => t.Get<ParseObject> ("recipient") == current)
+			    })
+				.Limit (limit)
+				.OrderByDescending ("time");
+
+			query = query.Include ("originator").Include ("recipient").Include ("tabType");
+
+			if (skip > 0)
+				query = query.Skip (skip);
+
 			return query;
 		}
 
@@ -100,13 +97,13 @@ namespace FriendTab
 				return parseData;
 
 			var obj = new ParseObject ("Tab");
-			obj.Put ("originator", Originator.ToParse ());
-			obj.Put ("recipient", Recipient.ToParse ());
-			obj.Put ("direction", (int)Direction);
-			obj.Put ("tabType", Type.ToParse ());
-			obj.Put ("location", new ParseGeoPoint (LatLng.Item1, LatLng.Item2));
-			obj.Put ("locationDesc", LocationDesc);
-			obj.Put ("time", DateTimeToJavaDate (Time));
+			obj["originator"] = Originator.ToParse ();
+			obj["recipient"] = Recipient.ToParse ();
+			obj["direction"] = (int)Direction;
+			obj["tabType"] = Type.ToParse ();
+			obj["location"] = new ParseGeoPoint (LatLng.Item1, LatLng.Item2);
+			obj["locationDesc"] = LocationDesc;
+			obj["time"] = Time;
 			parseData = obj;
 
 			return obj;
@@ -115,17 +112,6 @@ namespace FriendTab
 		static Tuple<double, double> GeopointToTuple (ParseGeoPoint geoPoint)
 		{
 			return Tuple.Create (geoPoint.Latitude, geoPoint.Longitude);
-		}
-
-		static DateTime JavaDateToDateTime (Java.Util.Date javaDate)
-		{
-			return new DateTime (1970, 01, 01, 0, 0, 0, DateTimeKind.Utc).AddMilliseconds (javaDate.Time).ToLocalTime ();
-		}
-
-		static Java.Util.Date DateTimeToJavaDate (DateTime dateTime)
-		{
-			var ms = (dateTime.ToUniversalTime () - (new DateTime (1970, 01, 01, 0, 0, 0, DateTimeKind.Utc))).TotalMilliseconds;
-			return new Java.Util.Date ((long)ms);
 		}
 
 		// This is internally used to see if the object was just fetched or not

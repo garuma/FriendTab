@@ -7,7 +7,7 @@ using System.Collections.Generic;
 using Android.Graphics;
 using Android.Util;
 
-using ParseLib;
+using Parse;
 
 namespace FriendTab
 {
@@ -61,10 +61,10 @@ namespace FriendTab
 		public static TabType FromParse (ParseObject parseTabType)
 		{
 			return new TabType {
-				Name = parseTabType.GetString ("name"),
-				Description = parseTabType.GetString ("description"),
+				Name = parseTabType.Get<string> ("name"),
+				Description = parseTabType.Get<string> ("description"),
 				//ParseImage = (ParseFile)parseTabType.Get ("image"),
-				SvgImage = parseTabType.GetString ("scalable"),
+				SvgImage = parseTabType.Get<string> ("scalable"),
 				parseData = parseTabType
 			};
 		}
@@ -75,11 +75,11 @@ namespace FriendTab
 				return parseData;
 
 			var obj = new ParseObject ("TabType");
-			obj.Put ("name", Name);
-			obj.Put ("description", Description);
-			obj.Put ("scalable", SvgImage);
+			obj["name"] = Name;
+			obj["description"] = Description;
+			obj["scalable"] = SvgImage;
 			parseData = obj;
-			obj.SaveEventually ();
+			obj.SaveAsync ();
 
 			// TODO: handle image creation, probably gonna wait on a Project Noun API
 			return obj;
@@ -120,58 +120,17 @@ namespace FriendTab
 
 	public static class TabTypes
 	{
-		static TaskCompletionSource<IEnumerable<TabType>> tcs;
+		static IEnumerable<TabType> tabTypes;
 
-		public static Task<IEnumerable<TabType>> GetTabTypes ()
+		public static async Task<IEnumerable<TabType>> GetTabTypes ()
 		{
-			if (tcs != null)
-				return tcs.Task;
+			if (tabTypes != null)
+				return tabTypes;
 
-			tcs = new TaskCompletionSource<IEnumerable<TabType>> ();
-			var query = new ParseQuery ("TabType");
-			query.SetCachePolicy (ParseQuery.CachePolicy.CacheElseNetwork);
-			query.MaxCacheAge = (long)TimeSpan.FromDays (7).TotalMilliseconds;
-			query.FindInBackground (new TabFindCallback ((ls, e) => {
-				if (e == null) {
-					var types = ls.Select (TabType.FromParse).ToArray ();
-					tcs.SetResult (types);
-				} else {
-					Log.Error ("TabTypes", e.ToString ());
-					tcs.SetException (e);
-				}
-			}));
-
-			return tcs.Task;
-		}
-	}
-
-	class TabGetDataCallback : GetDataCallback
-	{
-		Action<byte[], ParseException> action;
-
-		public TabGetDataCallback (Action<byte[], ParseException> action)
-		{
-			this.action = action;
-		}
-
-		public override void Done (byte[] data, ParseException e)
-		{
-			action (data, e);
-		}
-	}
-
-	class TabFindCallback : FindCallback
-	{
-		Action<IList<ParseObject>, ParseException> action;
-
-		public TabFindCallback (Action<IList<ParseObject>, ParseException> action)
-		{
-			this.action = action;
-		}
-
-		public override void Done (IList<ParseObject> objects, ParseException e)
-		{
-			action (objects, e);
+			tabTypes = (await ParseObject.GetQuery ("TabType").FindAsync ().ConfigureAwait (false))
+				.Select (TabType.FromParse)
+				.ToArray ();
+			return tabTypes;
 		}
 	}
 }

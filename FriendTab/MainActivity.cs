@@ -14,7 +14,7 @@ using Android.Content.PM;
 
 using Java.Lang;
 
-using ParseLib;
+using Parse;
 
 namespace FriendTab
 {
@@ -101,7 +101,10 @@ namespace FriendTab
 		void RefreshLoop (TabPerson person)
 		{
 			if (!person.IsVerified) {
-				Action callback = () => person.AssociatedUser.RefreshInBackground (new TabRefreshCallback ((o, e) => RefreshLoop (person)));
+				Action callback = async () => {
+					await person.AssociatedUser.FetchAsync ();
+					RefreshLoop (person);
+				};
 				var timer = new SignupTimer (20000, 20000, callback);
 				timer.Start ();
 			} else {
@@ -122,21 +125,6 @@ namespace FriendTab
 			base.OnRestoreInstanceState (savedInstanceState);
 			if (savedInstanceState.ContainsKey ("selectedTab"))
 				ActionBar.SetSelectedNavigationItem (savedInstanceState.GetInt ("selectedTab"));
-		}
-
-		class TabRefreshCallback : RefreshCallback
-		{
-			Action<ParseObject, ParseException> action;
-			
-			public TabRefreshCallback (Action<ParseObject, ParseException> action)
-			{
-				this.action = action;
-			}
-			
-			public override void Done (ParseObject pobject, ParseException pexception)
-			{
-				action (pobject, pexception);
-			}
 		}
 	}
 }

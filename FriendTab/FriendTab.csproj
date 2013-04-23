@@ -43,9 +43,13 @@
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="Mono.Android" />
-    <Reference Include="Parse">
-      <HintPath>lib\Parse.dll</HintPath>
+    <Reference Include="Newtonsoft.Json">
+      <HintPath>..\Parse-1.2.1\Parse.Android\Newtonsoft.Json.dll</HintPath>
     </Reference>
+    <Reference Include="Parse.Android">
+      <HintPath>..\Parse-1.2.1\Parse.Android\Parse.Android.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Resources\Resource.designer.cs" />
@@ -85,6 +89,8 @@
     <Compile Include="SerialScheduler.cs" />
     <Compile Include="ParseCredentials.cs" />
     <Compile Include="DensityExtensions.cs" />
+    <Compile Include="App.cs" />
+    <Compile Include="DataObjects\ParseExtensions.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Assets\AboutAssets.txt" />
@@ -133,9 +139,6 @@
     <Folder Include="Resources\drawable-xhdpi\" />
     <Folder Include="Resources\drawable-hdpi\" />
     <Folder Include="Resources\drawable-mdpi\" />
-  </ItemGroup>
-  <ItemGroup>
-    <AndroidJavaLibrary Include="lib\Parse-1.1.6.jar" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\FooSvg\FooSvg.csproj">

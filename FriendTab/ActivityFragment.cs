@@ -13,7 +13,7 @@ using Android.Util;
 using Android.Views;
 using Android.Widget;
 
-using ParseLib;
+using Parse;
 
 namespace FriendTab
 {
@@ -60,7 +60,7 @@ namespace FriendTab
 				noContent.Visibility = ViewStates.Visible;
 				noContent.Text = "You need to verify your account email.";
 			} else if (currentDataIndex == 0) {
-				RetrieveActivityData (adapter);
+				RetrieveActivityData (adapter).ConfigureAwait (false);
 			}
 		}
 
@@ -86,7 +86,7 @@ namespace FriendTab
 		{
 			currentDataIndex = 0;
 			adapter = new ActivityItemAdapter (Activity);
-			RetrieveActivityData (adapter);
+			RetrieveActivityData (adapter).ConfigureAwait (false);
 			ListAdapter = adapter;
 		}
 
@@ -96,54 +96,34 @@ namespace FriendTab
 				return;
 			loading = true;
 
-			RetrieveActivityData (adapter);
+			RetrieveActivityData (adapter).ConfigureAwait (false);
 		}
 
-		void RetrieveActivityData (ActivityItemAdapter adapter)
+		async Task RetrieveActivityData (ActivityItemAdapter adapter)
 		{
 			int count = currentDataIndex == 0 ? 5 : 10;
-			var query = CreateQuery (skip: currentDataIndex, limit: count);
+			var query = TabObject.CreateTabActivityListQuery (skip: currentDataIndex, limit: count);
 			if (currentDataIndex == 0) {
 				loadingBar.Visibility = ViewStates.Visible;
 				noContent.Visibility = ViewStates.Gone;
 			}
-			query.FindInBackground (new TabFindCallback ((ps, e) => {
-				if (e == null) {
-					if (ps.Count == 0) {
-						if (currentDataIndex == 0) {
-							loadingBar.Visibility = ViewStates.Gone;
-							noContent.Visibility = ViewStates.Visible;
-						}
-						return;
+			try {
+				var ps = (await query.FindAsync ()).ToArray ();
+				if (ps.Length == 0) {
+					if (currentDataIndex == 0) {
+						loadingBar.Visibility = ViewStates.Gone;
+						noContent.Visibility = ViewStates.Visible;
 					}
-					var tabObjects = ps.Select (TabObject.FromParse).ToList ();
-					adapter.FeedData (tabObjects);
-					currentDataIndex += count;
-					loading = false;
-				} else {
-					Log.Error ("ActivityRetriever", e.ToString ());
-					loading = false;
+					return;
 				}
-			}));
-		}
-
-		ParseQuery CreateQuery (int skip = 0, int limit = 10)
-		{
-			var query = ParseQuery.Or (new ParseQuery[] {
-				new ParseQuery ("Tab").WhereEqualTo ("originator", TabPerson.CurrentPerson.ToParse ()),
-				new ParseQuery ("Tab").WhereEqualTo ("recipient", TabPerson.CurrentPerson.ToParse ())
-			});
-			query.SetCachePolicy (ParseQuery.CachePolicy.NetworkElseCache);
-			query.OrderByDescending ("time");
-			query.Include ("originator");
-			query.Include ("recipient");
-			query.Include ("tabType");
-
-			if (skip > 0)
-				query.Skip = skip;
-			query.Limit = limit;
-
-			return query;
+				var tabObjects = ps.Select (TabObject.FromParse).ToList ();
+				adapter.FeedData (tabObjects);
+				currentDataIndex += count;
+				loading = false;
+			} catch (Exception e) {
+				Log.Error ("ActivityRetriever", e.ToString ());
+				loading = false;
+			}
 		}
 	}
 }

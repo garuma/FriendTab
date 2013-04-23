@@ -4,7 +4,7 @@ using System.Threading.Tasks;
 using System.Collections.Generic;
 using System.Security.Cryptography;
 
-using ParseLib;
+using Parse;
 
 using Android.Util;
 
@@ -17,8 +17,9 @@ namespace FriendTab
 		static Dictionary<string, AndroidPerson> temporaryAndroidPersons = new Dictionary<string, AndroidPerson> ();
 
 		ParseObject parseData;
-		TaskCompletionSource<IEnumerable<TabType>> preferredTabTypes;
-		TaskCompletionSource<AndroidPerson> androidPerson;
+		AndroidPerson androidPerson;
+
+		//IEnumerable<TabType> preferredTabTypes;
 
 		public string DisplayName { get; set; }
 		public IEnumerable<string> Emails { get; set; }
@@ -32,7 +33,7 @@ namespace FriendTab
 
 		public bool IsVerified {
 			get {
-				return AssociatedUser.Has ("emailVerified") && AssociatedUser.GetBoolean ("emailVerified");
+				return AssociatedUser.ContainsKey ("emailVerified") && AssociatedUser.Get<bool> ("emailVerified");
 			}
 		}
 
@@ -50,22 +51,21 @@ namespace FriendTab
 		public static TabPerson FromParse (ParseObject parseUser)
 		{
 			return new TabPerson {
-				DisplayName = parseUser.GetString ("displayName"),
-				Emails = parseUser.GetList ("emails").Cast<string> ().ToArray (),
-				AssociatedUser = parseUser.GetParseUser ("parseUser"),
+				DisplayName = parseUser.Get<string> ("displayName"),
+				Emails = parseUser.Get<IList<string>> ("emails").ToArray (),
+				AssociatedUser = parseUser.GetOrNull<ParseUser> ("parseUser"),
 				parseData = parseUser,
 			};
 		}
 
-		public Task<IEnumerable<TabType>> GetPreferredTabTypes ()
+		/*public async Task<IEnumerable<TabType>> GetPreferredTabTypes ()
 		{
 			if (parseData == null)
 				throw new NoParseDataException ("TabPerson");
 
 			if (preferredTabTypes != null)
-				return preferredTabTypes.Task;
+				return preferredTabTypes;
 
-			preferredTabTypes = new TaskCompletionSource<IEnumerable<TabType>> ();
 			var relation = parseData.GetRelation ("preferredTabTypes");
 			var query = relation.Query;
 			query.SetCachePolicy (ParseQuery.CachePolicy.NetworkElseCache);
@@ -97,33 +97,25 @@ namespace FriendTab
 
 			parseData.GetRelation ("preferredTabTypes").Remove (type.ToParse ());
 			parseData.SaveEventually ();
-		}
+		}*/
 
-		public void AddEmail (string email)
+		public async Task AddEmail (string email)
 		{
 			if (parseData == null)
 				throw new NoParseDataException ("TabPerson");
 
-			parseData.AddUnique ("emails", MD5Hash (email));
-			parseData.SaveEventually ();
+			parseData.AddUniqueToList ("emails", MD5Hash (email));
+			await parseData.SaveAsync ().ConfigureAwait (false);
 		}
 
-		public Task<ParseUser> FetchUser ()
+		public async Task<ParseUser> FetchUser ()
 		{
-			var tcs = new TaskCompletionSource<ParseUser> ();
 			if (parseData == null)
-				tcs.SetException (new InvalidOperationException ("No parseData available to query the user"));
-			parseData.GetParseUser ("parseUser")
-				.FetchIfNeededInBackground (new TabGetCallback ((o, e) => {
-					if (e != null)
-						tcs.SetException (e);
-					else {
-						tcs.SetResult ((ParseUser)o);
-						AssociatedUser = (ParseUser)o;
-					}
-				}));
-
-			return tcs.Task;
+				throw new InvalidOperationException ("No parseData available to query the user");
+			var user = parseData.Get<ParseUser> ("parseUser");
+			await user.FetchIfNeededAsync ();
+			AssociatedUser = user;
+			return user;
 		}
 
 		// In this method, we md5 the provided emails before sending them to parse
@@ -133,56 +125,39 @@ namespace FriendTab
 			if (parseData != null)
 				return parseData;
 			var parseObject = new ParseObject ("Person");
-			parseObject.Put ("displayName", DisplayName);
-			parseObject.AddAll ("emails", Emails.Select (MD5Hash).ToArray ());
+			parseObject["displayName"] = DisplayName;
+			parseObject.AddRangeUniqueToList ("emails", Emails.Select (MD5Hash).ToArray ());
 			if (AssociatedUser != null)
-				parseObject.Put ("parseUser", AssociatedUser);
+				parseObject["parseUser"] = AssociatedUser;
 			parseData = parseObject;
 
 			return parseObject;
 		}
 
-		public Task<AndroidPerson> GetAndroidPersonDetail ()
+		public async Task<AndroidPerson> GetAndroidPersonDetail ()
 		{
 			if (androidPerson != null)
-				return androidPerson.Task;
+				return androidPerson;
 			if (parseData == null)
 				throw new NoParseDataException ("TabPerson");
 
-			androidPerson = new TaskCompletionSource<AndroidPerson> ();
-
-			if (temporaryAndroidPersons.ContainsKey (parseData.ObjectId)) {
-				androidPerson.TrySetResult (temporaryAndroidPersons[parseData.ObjectId]);
-				return androidPerson.Task;
-			}
+			if (temporaryAndroidPersons.TryGetValue (parseData.ObjectId, out androidPerson))
+				return androidPerson;
 
 			var query = GetAndroidPersonQuery ();
-			query.GetFirstInBackground (new TabGetCallback ((o, e) => {
-				var ap = new AndroidPerson (o);
-				androidPerson.TrySetResult (ap);
-				// Protect against faulty Parse cache
-				if (o == null)
-					temporaryAndroidPersons[parseData.ObjectId] = ap;
-			}));
+			var result = await query.FirstOrDefaultAsync ();
+			androidPerson = new AndroidPerson (result);
+			if (result == null)
+				temporaryAndroidPersons[parseData.ObjectId] = androidPerson;
 
-			return androidPerson.Task;
+			return androidPerson;
 		}
 
-		internal void ClearCachedAndroidPersonDetail ()
+		ParseQuery<ParseObject> GetAndroidPersonQuery ()
 		{
-			androidPerson = null;
-			var query = GetAndroidPersonQuery ();
-			query.ClearCachedResult ();
-		}
-
-		ParseQuery GetAndroidPersonQuery ()
-		{
-			var query = new ParseQuery ("AndroidPerson");
-			query.SetCachePolicy (ParseQuery.CachePolicy.CacheElseNetwork);
-			query.MaxCacheAge = (long)TimeSpan.FromDays (7).TotalMilliseconds;
-			query.WhereEqualTo ("fromPerson", TabPerson.CurrentPerson.ToParse ());
-			query.WhereEqualTo ("who", parseData);
-			return query;
+			return ParseObject.GetQuery ("AndroidPerson")
+				.Where (ap => ap.Get<ParseUser> ("fromPerson") == TabPerson.CurrentPerson.ToParse ())
+				.Where (ap => ap.Get<ParseObject> ("who") == parseData);
 		}
 
 		internal static string MD5Hash (string input)
@@ -219,21 +194,6 @@ namespace FriendTab
 		public static bool operator!= (TabPerson p1, TabPerson p2)
 		{
 			return !(p1 == p2);
-		}
-	}
-
-	class TabGetCallback : GetCallback
-	{
-		Action<ParseObject, ParseException> action;
-
-		public TabGetCallback (Action<ParseObject, ParseException> action)
-		{
-			this.action = action;
-		}
-
-		public override void Done (ParseObject obj, ParseException e)
-		{
-			action (obj, e);
 		}
 	}
 }

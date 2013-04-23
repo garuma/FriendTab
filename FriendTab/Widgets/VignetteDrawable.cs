@@ -24,7 +24,7 @@ namespace FriendTab
 			paint = new Paint () { AntiAlias = true };
 			paint.SetShader (bitmapShader);
 
-			margin = margin;
+			this.margin = margin;
 		}
 
 		protected override void OnBoundsChange (Rect bounds)

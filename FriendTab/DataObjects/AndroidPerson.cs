@@ -1,6 +1,7 @@
 using System;
+using System.Threading.Tasks;
 
-using ParseLib;
+using Parse;
 
 namespace FriendTab
 {
@@ -19,35 +20,37 @@ namespace FriendTab
 
 		public string LookupID {
 			get {
-				return obj.GetString ("lookupID");
+				return obj.GetOrNull<string> ("lookupID");
 			}
 			set {
-				obj.Put ("lookupID", value);
+				obj["lookupID"] = value;
 			}
 		}
 
 		public string ContactID {
 			get {
-				return obj.GetString ("contactID");
+				return obj.GetOrNull<string> ("contactID");
 			}
 			set {
-				obj.Put ("contactID", value);
+				obj["contactID"] = value;
 			}
 		}
 
-		public void Update (Action postUpdateCallback)
+		public async void Update ()
 		{
-			if (!obj.Has ("fromPerson"))
-				obj.Put ("fromPerson", FromPerson.ToParse ());
-			if (!obj.Has ("who"))
-				obj.Put ("who", Who.ToParse ());
+			if (!obj.ContainsKey ("fromPerson"))
+				obj["fromPerson"] = FromPerson.ToParse ();
+			if (!obj.ContainsKey ("who"))
+				obj["who"] = Who.ToParse ();
 
-			try {
-				obj.Save ();
-				postUpdateCallback ();
-			} catch {
-				obj.SaveEventually (new TabSaveCallback (e => postUpdateCallback ()));
-			}
+			do {
+				try {
+					await obj.SaveAsync ().ConfigureAwait (false);
+					return;
+				} catch (Exception e) {
+					Android.Util.Log.Debug ("AndroidPerson", e.ToString ());
+				}
+			} while (true);
 		}
 	}
 }

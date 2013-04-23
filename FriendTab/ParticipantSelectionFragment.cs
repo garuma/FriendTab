@@ -16,7 +16,7 @@ using Android.Graphics;
 using Android.Locations;
 using Android.Views.Animations;
 
-using ParseLib;
+using Parse;
 
 namespace FriendTab
 {
@@ -154,7 +154,7 @@ namespace FriendTab
 			base.OnDestroyView ();
 		}
 
-		void HandleSelectedUserChanged (object sender, EventArgs evt)
+		async void HandleSelectedUserChanged (object sender, EventArgs evt)
 		{
 			if (whatEntry.Visibility == ViewStates.Invisible) {
 				whatEntry.Visibility = ViewStates.Visible;
@@ -175,19 +175,17 @@ namespace FriendTab
 
 			statsSpinner.Visibility = ViewStates.Visible;
 
-			selectedContact.ToPerson ().ContinueWith (t => {
-				selectedContact.PersonCache = t.Result;
-				t.Result.GetAndroidPersonDetail ().ContinueWith (androidPerson => {
-					var ap = androidPerson.Result;
-					ap.ContactID = selectedContact.ContactID;
-					ap.LookupID = selectedContact.LookupID;
-					ap.FromPerson = TabPerson.CurrentPerson;
-					ap.Who = t.Result;
-					ap.Update (t.Result.ClearCachedAndroidPersonDetail);
-				});
+			var person = await selectedContact.ToPerson ();
+			selectedContact.PersonCache = person;
 
-				UpdateTabStatistics (t.Result, selectedContact);
-			});
+			UpdateTabStatistics (person, selectedContact);
+
+			var ap = await person.GetAndroidPersonDetail ();
+			ap.ContactID = selectedContact.ContactID;
+			ap.LookupID = selectedContact.LookupID;
+			ap.FromPerson = TabPerson.CurrentPerson;
+			ap.Who = person;
+			ap.Update ();
 		}
 
 		void HandleDrag (object sender, Android.Views.View.DragEventArgs e)
@@ -238,53 +236,53 @@ namespace FriendTab
 			}
 		}
 
-		void RegisterNewTab (SelectedUserInfo originator, SelectedUserInfo recipient, string tabTypeName, string locationDesc = null)
+		async void RegisterNewTab (SelectedUserInfo originator, SelectedUserInfo recipient, string tabTypeName, string locationDesc = null)
 		{
-			var selectedPerson = (originator ?? recipient).ToPerson ();
-			var tabType = TabTypes.GetTabTypes ()
-				.ContinueWith (ts => ts.Result.FirstOrDefault (t => t.Name.Equals (tabTypeName, StringComparison.OrdinalIgnoreCase)));
+			var selectedPerson = await (originator ?? recipient).ToPerson ();
+			var tabType = (await TabTypes.GetTabTypes ())
+				.FirstOrDefault (t => t.Name.Equals (tabTypeName, StringComparison.OrdinalIgnoreCase));
 
 			var dialog = new AskLocationDialog (locator);
 			if (!string.IsNullOrEmpty (locationDesc))
 				dialog.FillInLocation (locationDesc);
 
-			Task.Factory.ContinueWhenAll (new Task[] { selectedPerson, tabType, dialog.LocationName }, _ => {
-				if (dialog.LocationName.IsCanceled)
-					return;
-				var dir = originator == null ? TabDirection.Giving : TabDirection.Receiving;
-				var location = locator.GetLocationAndStopActiveSearching ();
-				locationDesc = dialog.LocationName.Result;
-				locator.RefreshNamedLocation (locationDesc);
-				TabPlace.RegisterPlace (locationDesc,
-				                        Tuple.Create (location.Latitude, location.Longitude));
+			try {
+				locationDesc = await dialog.LocationName;
+			} catch (Exception e) {
+				Android.Util.Log.Debug ("RegisterLocation", e.ToString ());
+				return;
+			}
 
-				var tab = new TabObject {
-					Originator = TabPerson.CurrentPerson,
-					Recipient = selectedPerson.Result,
-					Type = tabType.Result,
-					Direction = dir,
-					LatLng = Tuple.Create (location.Latitude, location.Longitude),
-					LocationDesc = locationDesc,
-					Time = DateTime.Now
-				};
-				Action postSave = () => {
-					UpdateTabStatistics (selectedPerson.Result, originator ?? recipient, true);
-					Activity.RunOnUiThread (() => PostedNewTab (tab));
-				};
-				var po = tab.ToParse ();
+			var dir = originator == null ? TabDirection.Giving : TabDirection.Receiving;
+			var location = locator.GetLocationAndStopActiveSearching ();
+			locator.RefreshNamedLocation (locationDesc);
+			TabPlace.RegisterPlace (locationDesc,
+			                        Tuple.Create (location.Latitude, location.Longitude));
+
+			var tab = new TabObject {
+				Originator = TabPerson.CurrentPerson,
+				Recipient = selectedPerson,
+				Type = tabType,
+				Direction = dir,
+				LatLng = Tuple.Create (location.Latitude, location.Longitude),
+				LocationDesc = locationDesc,
+				Time = DateTime.Now
+			};
+			Action postSave = () => {
+				UpdateTabStatistics (selectedPerson, originator ?? recipient, true);
+				Activity.RunOnUiThread (() => PostedNewTab (tab));
+			};
+			var po = tab.ToParse ();
+			while (true) {
 				try {
-					po.Save ();
+					await po.SaveAsync ();
+					postSave ();
+					break;
 				} catch (Exception e) {
 					Log.Error ("TabSaver", e.ToString ());
-					Activity.RunOnUiThread (() => flashBarCtrl.ShowBarUntil (() => {
-						po.Save ();
-						postSave ();
-						return true;
-					}, withMessageId: Resource.String.flashbar_tab_error));
-					return;
 				}
-				postSave ();
-			});
+				await flashBarCtrl.ShowBarAsync (withMessageId: Resource.String.flashbar_tab_error);
+			}
 
 			if (locationDesc == null) {
 				var lastLocation = locator.LastKnownLocation;
@@ -307,72 +305,64 @@ namespace FriendTab
 				activityFragment.AddLocalTabObject (tab);
 		}
 
-		void UpdateTabStatistics (TabPerson other, SelectedUserInfo selectedContact, bool force = false)
+		async void UpdateTabStatistics (TabPerson other, SelectedUserInfo selectedContact, bool force = false)
 		{
 			var p = other.ToParse ();
 			var self = TabPerson.CurrentPerson.ToParse ();
 
 			var query = TabObject.CreateTabListQuery (self, p);
-			if (force)
-				query.SetCachePolicy (ParseQuery.CachePolicy.NetworkElseCache);
-			else {
-				query.SetCachePolicy (ParseQuery.CachePolicy.CacheElseNetwork);
-				query.MaxCacheAge = 1000 * 60; // 1 minute
-			}
-
-			query.FindInBackground (new TabFindCallback ((ps, ex) => {
-				if (ex != null) {
-					Android.Util.Log.Error ("TabStats", ex, "Error while retrieving tab list");
-					statsSpinner.Visibility = ViewStates.Invisible;
-					flashBarCtrl.ShowBar (() => UpdateTabStatistics (other, selectedContact, force),
-					                            withMessageId: Resource.String.flashbar_stats_error);
-					return;
-				}
-
-				var tabs = ps.Select (TabObject.FromParse).ToArray ();
-				if (tabs.Length == 0) {
-					statsSpinner.Visibility = ViewStates.Invisible;
-					karmaBar.SetAnimatedVisibility (false);
-					return;
-				}
-
-				var counts = tabs.GroupBy (tab => tab.Type.Name).ToArray ();
-				int totalPositive = 0, totalNegative = 0;
-				int totalTypes = counts.Length;
-
-				foreach (var group in counts) {
-					var badge = BadgeInstances[group.Key];
-					int positive = 0, negative = 0;
-
-					foreach (var tab in group) {
-						if ((tab.Originator == other && tab.Direction == TabDirection.Receiving)
-						    || (tab.Originator == TabPerson.CurrentPerson && tab.Direction == TabDirection.Giving))
-							positive++;
-						if ((tab.Originator == TabPerson.CurrentPerson && tab.Direction == TabDirection.Receiving)
-						    || (tab.Originator == other && tab.Direction == TabDirection.Giving))
-							negative++;
+			while (true) {
+				try {
+					var ps = await query.FindAsync ().ConfigureAwait (false);
+					var tabs = ps.Select (TabObject.FromParse).ToArray ();
+					if (tabs.Length == 0) {
+						statsSpinner.Visibility = ViewStates.Invisible;
+						karmaBar.SetAnimatedVisibility (false);
+						return;
 					}
 
-					totalPositive += positive;
-					totalNegative += negative;
+					var counts = tabs.GroupBy (tab => tab.Type.Name).ToArray ();
+					int totalPositive = 0, totalNegative = 0;
+					int totalTypes = counts.Length;
 
-					Activity.RunOnUiThread (() => {
-						if (selectedContact.DisplayName != userBadge.SelectedUser.DisplayName)
-							return;
-						//badge.Count = positive - negative;
-						badge.SetCount (positive - negative, true);
-						if (--totalTypes == 0) {
-							if (totalPositive == 0 && totalNegative == 0)
-								karmaBar.SetAnimatedVisibility (false);
-							else {
-								karmaBar.SetAnimatedVisibility (true);
-								karmaBar.SetKarmaBasedOnValues (totalPositive, totalNegative);
-							}
-							statsSpinner.Visibility = ViewStates.Invisible;
+					foreach (var group in counts) {
+						var badge = BadgeInstances[group.Key];
+						int positive = 0, negative = 0;
+
+						foreach (var tab in group) {
+							if ((tab.Originator == other && tab.Direction == TabDirection.Receiving)
+							    || (tab.Originator == TabPerson.CurrentPerson && tab.Direction == TabDirection.Giving))
+								positive++;
+							if ((tab.Originator == TabPerson.CurrentPerson && tab.Direction == TabDirection.Receiving)
+							    || (tab.Originator == other && tab.Direction == TabDirection.Giving))
+								negative++;
 						}
-					});
+
+						totalPositive += positive;
+						totalNegative += negative;
+
+						Activity.RunOnUiThread (() => {
+							if (selectedContact.DisplayName != userBadge.SelectedUser.DisplayName)
+								return;
+							badge.SetCount (positive - negative, true);
+							if (--totalTypes == 0) {
+								if (totalPositive == 0 && totalNegative == 0)
+									karmaBar.SetAnimatedVisibility (false);
+								else {
+									karmaBar.SetAnimatedVisibility (true);
+									karmaBar.SetKarmaBasedOnValues (totalPositive, totalNegative);
+								}
+								statsSpinner.Visibility = ViewStates.Invisible;
+							}
+						});
+					}
+					return;
+				} catch (Exception ex) {
+					Android.Util.Log.Error ("TabStats", ex.ToString (), "Error while retrieving tab list");
+					statsSpinner.Visibility = ViewStates.Invisible;
 				}
-			}));
+				await flashBarCtrl.ShowBarAsync (withMessageId: Resource.String.flashbar_stats_error);
+			}
 		}
 
 		public void Refresh ()
@@ -388,21 +378,6 @@ namespace FriendTab
 		internal interface IParticipantDropZone
 		{
 			void SetDragOverState (bool hovering);
-		}
-	}
-
-	public class TabCountCallback : CountCallback
-	{
-		Action<int, ParseException> callback;
-
-		public TabCountCallback (Action<int, ParseException> callback)
-		{
-			this.callback = callback;
-		}
-
-		public override void Done (int count, ParseException e)
-		{
-			callback (count, e);
 		}
 	}
 }

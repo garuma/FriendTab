@@ -12,7 +12,7 @@ using Android.Widget;
 using Android.OS;
 using Android.Provider;
 
-using ParseLib;
+using Parse;
 
 namespace FriendTab
 {
@@ -28,7 +28,6 @@ namespace FriendTab
 		{
 			base.OnCreate (bundle);
 
-			Parse.Initialize (this, ParseCredentials.ApplicationID, ParseCredentials.ClientKey);
 			DensityExtensions.Initialize (this);
 
 			// Set our view from the "main" layout resource
@@ -44,7 +43,7 @@ namespace FriendTab
 			 */
 			if (ParseUser.CurrentUser != null) {
 				signInBtn.Visibility = signUpBtn.Visibility = userEntry.Visibility = passwordEntry.Visibility = ViewStates.Invisible;
-				ParseUser.CurrentUser.RefreshInBackground (null);
+				ParseUser.CurrentUser.FetchAsync ();
 				LaunchApp (this, ParseUser.CurrentUser, null);
 			}
 
@@ -57,12 +56,10 @@ namespace FriendTab
 					return;
 				if (timer != null)
 					timer.Cancel ();
-				timer = new SignupTimer (1000, 1000, () => {
-					var usernameChecker = CheckLoginDisponibility (login);
-					usernameChecker.ContinueWith (t => {
-						if (userEntry.Text == login)
-							signUpBtn.Enabled = t.Result;
-					}, TaskContinuationOptions.ExecuteSynchronously);
+				timer = new SignupTimer (1000, 1000, async () => {
+					var disponibility = await CheckLoginDisponibility (login);
+					if (userEntry.Text == login)
+						signUpBtn.Enabled = disponibility;
 				});
 				timer.Start ();
 			};
@@ -75,11 +72,11 @@ namespace FriendTab
 			ProgressDialog spinDialog = new ProgressDialog (this) { Indeterminate = true };
 			spinDialog.SetCancelable (false);
 
-			Action<ParseUser, ParseException> callback = (user, err) => {
-				if (user == null || err != null) {
+			Action<ParseUser, Task> callback = (user, task) => {
+				if (task.IsFaulted) {
 					Android.Util.Log.Debug ("Login",
 					                        "User not recognized: {0}",
-					                        (err != null) ? err.Message : string.Empty);
+					                        task.Exception.Flatten ().ToString ());
 					spinDialog.Dismiss ();
 					var builder = new AlertDialog.Builder (this);
 					builder.SetMessage (Resource.String.login_error);
@@ -89,7 +86,9 @@ namespace FriendTab
 					return;
 				}
 
-				Android.Util.Log.Debug ("Login", "User {0} successfully logged. New? {1}", user.Username, user.IsNew);
+				Android.Util.Log.Debug ("Login", "User {0} successfully logged. New? {1}",
+				                        user.Username,
+				                        user.IsNew);
 
 				LaunchApp (this, user, spinDialog.Dismiss);
 			};
@@ -105,9 +104,8 @@ namespace FriendTab
 				}
 				spinDialog.SetMessage ("Signing in...");
 				spinDialog.Show ();
-				ParseUser.LogInInBackground (email,
-				                             passwordEntry.Text,
-				                             new TabLoginCallback (callback));
+
+				ParseUser.LogInAsync (email, passwordEntry.Text).ContinueWith (t => callback (t.Result, t));
 			};
 			signUpBtn.Click += (sender, e) => {
 				string email;
@@ -124,75 +122,61 @@ namespace FriendTab
 
 				var user = new ParseUser () {
 					Username = email,
-					Email = email
+					Email = email,
+					Password = passwordEntry.Text
 				};
-				user.SetPassword (passwordEntry.Text);
-				user.SignUpInBackground (new TabSignUpCallback (user, callback));
+				user.SignUpAsync ().ContinueWith (t => callback (user, t));
 			};
 		}
 
-		internal void LaunchApp (Activity ctx, ParseUser withUser, Action uiCallback)
+		internal async void LaunchApp (Activity ctx, ParseUser withUser, Action uiCallback)
 		{
-			// Fetch the person corresponding to the user
-			Task.Factory.StartNew (() => {
-				var query = new ParseQuery ("Person");
-				query.SetCachePolicy (ParseQuery.CachePolicy.CacheElseNetwork);
-				query.WhereEqualTo ("parseUser", withUser);
-				query.Include ("parseUser");
-				ParseObject self = null;
-				try {
-					self = query.First;
-				} catch (ParseException ex) {
-					// We may have a stall result from a previous registration
-					if (query.HasCachedResult) {
-						query.ClearCachedResult ();
-						try {
-							self = query.First;
-						} catch {
-							Android.Util.Log.Error ("Landing", "Error when trying to retrieve user 2. Normal if empty. {0}", ex.ToString ());
-						}
-					}
-					Android.Util.Log.Error ("Landing", "Error when trying to retrieve user. Normal if empty. {0}", ex.ToString ());
-				}
-				// First time ever, fill the info
-				if (self == null) {
-					TabPerson person = null;
-					// Check if our TabPerson wasn't created indirectly by another user
-					query = new ParseQuery ("Person");
-					query.WhereEqualTo ("emails", TabPerson.MD5Hash (withUser.Email));
-					try {
-						person = TabPerson.FromParse (query.First);
-						person.AssociatedUser = withUser;
-					} catch {
-						// We use the main address email we got by parseUser
-						// and we will fill the rest lazily later from profile
-						// idem for the display name
-						person = new TabPerson {
-							AssociatedUser = withUser,
-							Emails = new string[] { withUser.Email }
-						};
-					}
-					return person;
-				} else {
-					TabPerson.CurrentPerson = TabPerson.FromParse (self);
-					return null;
-				}
-			}).ContinueWith (t => {
-				ctx.RunOnUiThread (() => {
-					// If the user was created, we setup a CursorLoader to query the information we need
-					if (t.Result != null) {
-						var person = t.Result;
-						person.DisplayName = string.IsNullOrEmpty (profile.DisplayName) ? MakeNameFromEmail (withUser.Email) : profile.DisplayName;
-						person.Emails = profile.Emails.Union (person.Emails);
-						person.ToParse ().SaveEventually ();
-						TabPerson.CurrentPerson = person;
-					}
+			var query = ParseObject.GetQuery ("Person")
+				.Where (p => p.Get<ParseUser> ("parseUser") == withUser)
+				.Include ("parseUser");
 
-					if (uiCallback != null)
-						uiCallback ();
-					ctx.Finish ();
-					ctx.StartActivity (typeof (MainActivity));
-				});
+			ParseObject self = null;
+			try {
+				self = await query.FirstOrDefaultAsync ().ConfigureAwait (false);
+			} catch (Exception e) {
+				Android.Util.Log.Error ("Landing", "Error when trying to retrieve user. Normal if empty. {0}", e.ToString ());
+			}
+
+			TabPerson person = null;
+
+			if (self == null) {
+				// Check if our TabPerson wasn't created indirectly by another user
+				query = ParseObject.GetQuery ("Person")
+					.Where (p => p.Get<IList<string>> ("emails").Contains (TabPerson.MD5Hash (withUser.Email)));
+				try {
+					person = TabPerson.FromParse (await query.FirstAsync ().ConfigureAwait (false));
+					person.AssociatedUser = withUser;
+				} catch {
+					// We use the main address email we got by parseUser
+					// and we will fill the rest lazily later from profile
+					// idem for the display name
+					person = new TabPerson {
+						AssociatedUser = withUser,
+						Emails = new string[] { withUser.Email }
+					};
+				}
+			} else {
+				TabPerson.CurrentPerson = TabPerson.FromParse (self);
+			}
+
+			ctx.RunOnUiThread (async () => {
+				// If the user was created, we setup a CursorLoader to query the information we need
+				if (person != null) {
+					person.DisplayName = string.IsNullOrEmpty (profile.DisplayName) ? MakeNameFromEmail (withUser.Email) : profile.DisplayName;
+					person.Emails = profile.Emails.Union (person.Emails);
+					await person.ToParse ().SaveAsync ();
+					TabPerson.CurrentPerson = person;
+				}
+
+				if (uiCallback != null)
+					uiCallback ();
+				ctx.Finish ();
+				ctx.StartActivity (typeof (MainActivity));
 			});
 		}
 
@@ -218,16 +202,17 @@ namespace FriendTab
 			}
 		}
 
-		Task<bool> CheckLoginDisponibility (string login)
+		async Task<bool> CheckLoginDisponibility (string login)
 		{
-			var tcs = new TaskCompletionSource<bool> ();
-			var userQuery = ParseUser.Query;
-			userQuery.WhereEqualTo ("username", login);
-			userQuery.SetCachePolicy (ParseQuery.CachePolicy.CacheElseNetwork);
-			// In case of an error, we assume the name is not taken
-			userQuery.CountInBackground (new TabCountCallback ((c, e) => tcs.SetResult (e != null || c == 0)));
-
-			return tcs.Task;
+			var userQuery = ParseUser.Query.Where (u => u.Username == login);
+			try {
+				var c = await userQuery.CountAsync ().ConfigureAwait (false);
+				return c == 0;
+			} catch (Exception e) {
+				Android.Util.Log.Debug ("loginDisponibility", e.ToString ());
+				// In case of an error, we assume the name is not taken
+				return true;
+			}
 		}
 		
 		protected override void OnActivityResult (int requestCode, Result resultCode, Intent data)
@@ -292,53 +277,6 @@ namespace FriendTab
 				}
 
 				return profile;
-			}
-		}
-
-		class TabLoginCallback : LogInCallback
-		{
-			Action<ParseUser, ParseException> action;
-
-			public TabLoginCallback (Action<ParseUser, ParseException> action)
-			{
-				this.action = action;
-			}
-
-			public override void Done (ParseUser p0, ParseException p1)
-			{
-				action (p0, p1);
-			}
-		}
-
-		class TabRefreshCallback : RefreshCallback
-		{
-			Action<ParseObject, ParseException> callback;
-
-			public TabRefreshCallback (Action<ParseObject, ParseException> callback)
-			{
-				this.callback = callback;
-			}
-
-			public override void Done (ParseObject obj, ParseException error)
-			{
-				callback (obj, error);
-			}
-		}
-
-		class TabSignUpCallback : SignUpCallback
-		{
-			Action<ParseUser, ParseException> action;
-			ParseUser user;
-			
-			public TabSignUpCallback (ParseUser user, Action<ParseUser, ParseException> action)
-			{
-				this.user = user;
-				this.action = action;
-			}
-			
-			public override void Done (ParseException p0)
-			{
-				action (user, p0);
 			}
 		}
 	}

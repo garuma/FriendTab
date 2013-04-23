@@ -6,13 +6,13 @@ using System.Collections.Generic;
 
 using Android.Graphics;
 
-using ParseLib;
+using Parse;
 
 namespace FriendTab
 {
 	public class SelectedUserInfo
 	{
-		TaskCompletionSource<TabPerson> person;
+		TabPerson person;
 
 		public string DisplayName { get; set; }
 		public IEnumerable<string> Emails { get; set; }
@@ -21,61 +21,37 @@ namespace FriendTab
 		public TabPerson PersonCache { get; set; }
 		public Bitmap AvatarBitmap { get; set; }
 
-		public Task<TabPerson> ToPerson ()
+		public async Task<TabPerson> ToPerson ()
 		{
 			if (person != null)
-				return person.Task;
+				return person;
 
-			person = new TaskCompletionSource<TabPerson> ();
-			var recipientQuery = new ParseQuery ("Person");
-			recipientQuery.SetCachePolicy (ParseQuery.CachePolicy.CacheElseNetwork);
+			var recipientQuery = ParseObject.GetQuery ("Person");
 			if (Emails.Any ())
-				recipientQuery.WhereContainedIn ("emails", Emails.Select (TabPerson.MD5Hash).ToArray ());
+				recipientQuery = recipientQuery.WhereContainedIn ("emails", Emails.Select (TabPerson.MD5Hash).ToArray ());
 			else
-				recipientQuery.WhereEqualTo ("displayName", DisplayName);
+				recipientQuery = recipientQuery.Where (p => p.Get<string> ("displayName") == DisplayName);
 
-			ParseObject recipient = null;
-			TabPerson recipientPerson = null;
-			recipientQuery.GetFirstInBackground (new TabGetCallback ((o, e) => {
-				if (o != null) {
-					recipient = o;
-					recipientPerson = TabPerson.FromParse (recipient);
-					// TODO: add the emails that are in Emails and not in recipientPerson.Emails
-					person.SetResult (recipientPerson);
-				} else {
-					recipientPerson = new TabPerson {
-						DisplayName = DisplayName,
-						Emails = Emails,
-					};
-					recipient = recipientPerson.ToParse ();
-					recipient.SaveInBackground (new TabSaveCallback (ex => {
-						if (ex == null)
-							person.SetResult (recipientPerson);
-						else {
-							Android.Util.Log.Error ("PersonCreator", ex.ToString ());
-							person.SetException (ex);
-						}
-					}));
-					recipientQuery.ClearCachedResult ();
-				}
-			}));
+			try {
+				var recipient = await recipientQuery.FirstOrDefaultAsync ().ConfigureAwait (false);
+				if (recipient != null)
+					person = TabPerson.FromParse (recipient);
+			} catch (Exception e) {
+				Android.Util.Log.Debug ("SelectedUserInfo", e.ToString ());
+			};
 
-			return person.Task;
-		}
-	}
+			// In case of an error
+			if (person == null) {
+				var recipientPerson = new TabPerson {
+					DisplayName = DisplayName,
+					Emails = Emails,
+				};
+				var recipient = recipientPerson.ToParse ();
+				await recipient.SaveAsync ();
+				person = recipientPerson;
+			}
 
-	public class TabSaveCallback : SaveCallback
-	{
-		Action<ParseException> callback;
-
-		public TabSaveCallback (Action<ParseException> callback)
-		{
-			this.callback = callback;
-		}
-
-		public override void Done (ParseException e)
-		{
-			callback (e);
+			return person;
 		}
 	}
 }
